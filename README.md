@@ -1,58 +1,139 @@
-# Salesforce App
+# Apex SObjectConverter
 
-This guide helps Salesforce developers who are new to Visual Studio Code go from zero to a deployed app using Salesforce Extensions for VS Code and Salesforce CLI.
+Apex library to assist with converting between different SObjects or cloning records.
 
-## Part 1: Choosing a Development Model
+## Basics
 
-There are two types of developer processes or models supported in Salesforce Extensions for VS Code and Salesforce CLI. These models are explained below. Each model offers pros and cons and is fully supported.
+A single class is in charge of orchestrating any record conversion or cloning operation, the conv_SObjectConverter.
 
-### Package Development Model
+To create a custom converter the conv_SObjectConverter should be extended and it's 2 abstract methods implemented:
 
-The package development model allows you to create self-contained applications or libraries that are deployed to your org as a single package. These packages are typically developed against source-tracked orgs called scratch orgs. This development model is geared toward a more modern type of software development process that uses org source tracking, source control, and continuous integration and deployment.
-
-If you are starting a new project, we recommend that you consider the package development model. To start developing with this model in Visual Studio Code, see [Package Development Model with VS Code](https://forcedotcom.github.io/salesforcedx-vscode/articles/user-guide/package-development-model). For details about the model, see the [Package Development Model](https://trailhead.salesforce.com/en/content/learn/modules/sfdx_dev_model) Trailhead module.
-
-If you are developing against scratch orgs, use the command `SFDX: Create Project` (VS Code) or `sfdx force:project:create` (Salesforce CLI)  to create your project. If you used another command, you might want to start over with that command.
-
-When working with source-tracked orgs, use the commands `SFDX: Push Source to Org` (VS Code) or `sfdx force:source:push` (Salesforce CLI) and `SFDX: Pull Source from Org` (VS Code) or `sfdx force:source:pull` (Salesforce CLI). Do not use the `Retrieve` and `Deploy` commands with scratch orgs.
-
-### Org Development Model
-
-The org development model allows you to connect directly to a non-source-tracked org (sandbox, Developer Edition (DE) org, Trailhead Playground, or even a production org) to retrieve and deploy code directly. This model is similar to the type of development you have done in the past using tools such as Force.com IDE or MavensMate.
-
-To start developing with this model in Visual Studio Code, see [Org Development Model with VS Code](https://forcedotcom.github.io/salesforcedx-vscode/articles/user-guide/org-development-model). For details about the model, see the [Org Development Model](https://trailhead.salesforce.com/content/learn/modules/org-development-model) Trailhead module.
-
-If you are developing against non-source-tracked orgs, use the command `SFDX: Create Project with Manifest` (VS Code) or `sfdx force:project:create --manifest` (Salesforce CLI) to create your project. If you used another command, you might want to start over with this command to create a Salesforce DX project.
-
-When working with non-source-tracked orgs, use the commands `SFDX: Deploy Source to Org` (VS Code) or `sfdx force:source:deploy` (Salesforce CLI) and `SFDX: Retrieve Source from Org` (VS Code) or `sfdx force:source:retrieve` (Salesforce CLI). The `Push` and `Pull` commands work only on orgs with source tracking (scratch orgs).
-
-## The `sfdx-project.json` File
-
-The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
-
-The most important parts of this file for getting started are the `sfdcLoginUrl` and `packageDirectories` properties.
-
-The `sfdcLoginUrl` specifies the default login URL to use when authorizing an org.
-
-The `packageDirectories` filepath tells VS Code and Salesforce CLI where the metadata files for your project are stored. You need at least one package directory set in your file. The default setting is shown below. If you set the value of the `packageDirectories` property called `path` to `force-app`, by default your metadata goes in the `force-app` directory. If you want to change that directory to something like `src`, simply change the `path` value and make sure the directory you’re pointing to exists.
-
-```json
-"packageDirectories" : [
-    {
-      "path": "force-app",
-      "default": true
+```java
+public class MyCustomLeadToAccountConverter extends conv_SObjectConverter {
+  protected override Schema.SObjectType getTargetSObjectType() {
+        return Account.SObjectType;
     }
-]
+
+    protected override Map<Schema.SObjectField, Schema.SObjectField> getTargetFieldBySourceFieldMap() {
+        return new Map<Schema.SObjectField, Schema.SObjectField> {
+            Lead.Description => Account.Description, 
+            Lead.NumberOfEmployees => Account.NumberOfEmployees
+        };
+    }
+}
 ```
 
-## Part 2: Working with Source
+Some additional optional methods are provided to create more powerful conversions:
 
-For details about developing against scratch orgs, see the [Package Development Model](https://trailhead.salesforce.com/en/content/learn/modules/sfdx_dev_model) module on Trailhead or [Package Development Model with VS Code](https://forcedotcom.github.io/salesforcedx-vscode/articles/user-guide/package-development-model).
+```java
+protected virtual void beforeConvert(SObject source);
+```
 
-For details about developing against orgs that don’t have source tracking, see the [Org Development Model](https://trailhead.salesforce.com/content/learn/modules/org-development-model) module on Trailhead or [Org Development Model with VS Code](https://forcedotcom.github.io/salesforcedx-vscode/articles/user-guide/org-development-model).
+Allows you to hook into the conversion process before it begins, giving you the source SObject that will be converted.
 
-## Part 3: Deploying to Production
+```java
+protected virtual void afterConvert(SObject source, SObject resultRecord);
+```
 
-Don’t deploy your code to production directly from Visual Studio Code. The deploy and retrieve commands do not support transactional operations, which means that a deployment can fail in a partial state. Also, the deploy and retrieve commands don’t run the tests needed for production deployments. The push and pull commands are disabled for orgs that don’t have source tracking, including production orgs.
+Allows you to hook into the conversion process after it ends, giving you the source converted SObject as well as the resulting record.
 
-Deploy your changes to production using [packaging](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_dev2gp.htm) or by [converting your source](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_force_source.htm#cli_reference_convert) into metadata format and using the [metadata deploy command](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_force_mdapi.htm#cli_reference_deploy).
+```java
+protected virtual Object onPopulateField(SObject sourceRecord, SObjectField sourceField, Object dataToTransfer);
+```
+
+Called on each field being converted. Allows you to override the value (dataToTransfer) that will be populated on the target field.
+
+## Conversion Contexts
+
+To power how fields are converted, conv_SObjectConverter uses Conversion Contexts (conv_SObjectConverter.ConversionContext).
+
+These take care of converting data between fields which types might not match from the defined getTargetFieldBySourceFieldMap.
+
+By default the following Conversion Contexts are used by the converter:
+
+| Conversion Context | Description |
+| ------------- | ------------- |
+| Same Context  | Converts fields that are of the same type.  |
+| Any To String  | Converts any data type to a String using String.valueOf() |
+| Number To Boolean  | Converts 0 to false, and any other number to true |
+| String To Boolean  | Converts the words "yes" and "true" (case insensitive) to true, and "no" and "false" to false. |
+
+### Custom Conversion Contexts
+
+You can create your custom ConversionContext implementations which allows you to create more types of data conversions or override the default ones.
+
+To create a custom context you can do the following:
+1.  Create an implementation of conv_SObjectConverter.ConversionContext
+
+2 methods should be implemented: 
+
+#### getTransferableData
+
+```java
+Object getTransferableData(SObject sourceRecord, SObjectField sourceField);
+```
+
+Implementation of the logic applied when converting from one type to another. For example, in the case of the Any To String implementation, this is 
+
+```java
+public Object getTransferableData(SObject sourceRecord, SObjectField sourceField) {
+  return String.valueOf(sourceRecord.get(sourceField));
+}
+```
+
+#### meetsContextCriteria
+
+```java
+Boolean meetsContextCriteria(Schema.DisplayType sourceFieldType, Schema.DisplayType targetFieldType);
+```
+
+Determines whether the context applies based on the field types.
+
+2. Register your context when your your conv_SObjectConverter.
+   
+```java
+// Assumming we have a custom conv_SObjectConverter.ConversionContext called CustomContext.
+new conv_SObjectConverter()
+  .addConversionContext(new CustomContext())
+  .convert(myRecord);
+```
+
+
+## Example - Translating Records
+
+An example implementation of a converter is provided in the `/sample` module. 
+
+That example shows the capabilities of cloning a record rather than converting by returning the same received SObjectType as the target and using all populated fields for the map. Using the `afterConvert` method the resulting SObject's name is renamed with an `_es` suffix to denote that it is a translated version of a different record.
+
+```java
+public with sharing class Translator extends conv_SObjectConverter {
+    ...
+    Schema.SObjectType targetType;
+    Map<Schema.SObjectField, Schema.SObjectField> targetFieldBySourceFieldMap;
+
+    public Translator() {
+        this.targetFieldBySourceFieldMap = new Map<Schema.SObjectField, Schema.SObjectField>();
+    }
+
+    protected override void beforeConvert(SObject source) {
+        // Since this acts as a cloner, then the target type will always be the same as the source's.
+        this.targetType = source.getSObjectType();
+
+        this.populateMapBasedOnQueriedFields(source);
+     }
+
+    protected override Schema.SObjectType getTargetSObjectType() {
+        return this.targetType;
+    }
+
+    protected override Map<Schema.SObjectField, Schema.SObjectField> getTargetFieldBySourceFieldMap() {
+        return this.targetFieldBySourceFieldMap;
+    }
+
+    protected override Object onPopulateField(SObject sourceRecord, SObjectField sourceField, Object dataToTransfer) { 
+      ...
+    }
+
+    ...
+}
+```

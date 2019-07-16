@@ -11,14 +11,16 @@ public abstract class conv_SObjectConverter {
         addConversionContext(new StringToBoolean());
     }
 
-    public void addConversionContext(ConversionContext ctx) {
+    public conv_SObjectConverter addConversionContext(ConversionContext ctx) {
         if (this.ctxs.isEmpty()) {
             this.ctxs.add(ctx);
-            return;
+            return this;
         }
         // Adding to the begining of the list to allow for custom contexts 
         // to override the defaults when ctxs is being looped through.
         this.ctxs.add(0, ctx);
+
+        return this;
     }
 
     /**

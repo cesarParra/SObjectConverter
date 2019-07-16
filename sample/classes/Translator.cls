@@ -39,6 +39,15 @@ public with sharing class Translator extends conv_SObjectConverter {
         return dataToTransfer;
     }
 
+    protected override void afterConvert(SObject source, SObject resultRecord) { 
+        String recordName = resultRecord.get('Name');
+        if (String.isBlank(recordName)) {
+            return;
+        }
+
+        resultRecord.put('Name', recordName + '_es');
+    }
+
     private void populateMapBasedOnQueriedFields(SObject sourceRecord) {
         Map<String, Schema.SObjectField> mfields = 
             sourceRecord.getSObjectType().getDescribe().fields.getMap();
