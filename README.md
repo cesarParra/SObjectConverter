@@ -6,7 +6,7 @@ Apex library to assist with converting between different SObjects or cloning rec
 
 A single class is in charge of orchestrating any record conversion or cloning operation, the conv_SObjectConverter.
 
-To create a custom converter the conv_SObjectConverter should be extended and it's 2 abstract methods implemented:
+To create a custom converter the `conv_SObjectConverter` should be extended and it's 2 abstract methods implemented:
 
 ```java
 public class MyCustomLeadToAccountConverter extends conv_SObjectConverter {
@@ -45,7 +45,7 @@ Called on each field being converted. Allows you to override the value (dataToTr
 
 ## Conversion Contexts
 
-To power how fields are converted, conv_SObjectConverter uses Conversion Contexts (conv_SObjectConverter.ConversionContext).
+To power how fields are converted, `conv_SObjectConverter` uses Conversion Contexts (`conv_SObjectConverter.ConversionContext`).
 
 These take care of converting data between fields which types might not match from the defined getTargetFieldBySourceFieldMap.
 
@@ -60,10 +60,10 @@ By default the following Conversion Contexts are used by the converter:
 
 ### Custom Conversion Contexts
 
-You can create your custom ConversionContext implementations which allows you to create more types of data conversions or override the default ones.
+You can create your custom `ConversionContext` implementations which allows you to create more types of data conversions or override the default ones.
 
 To create a custom context you can do the following:
-1.  Create an implementation of conv_SObjectConverter.ConversionContext
+1.  Create an implementation of `conv_SObjectConverter.ConversionContext`
 
 2 methods should be implemented: 
 
@@ -89,10 +89,10 @@ Boolean meetsContextCriteria(Schema.DisplayType sourceFieldType, Schema.DisplayT
 
 Determines whether the context applies based on the field types.
 
-2. Register your context when your your conv_SObjectConverter.
+2. Register your context when your your `conv_SObjectConverter`.
    
 ```java
-// Assumming we have a custom conv_SObjectConverter.ConversionContext called CustomContext.
+// Assuming we have a custom conv_SObjectConverter.ConversionContext called CustomContext.
 new conv_SObjectConverter()
   .addConversionContext(new CustomContext())
   .convert(myRecord);
