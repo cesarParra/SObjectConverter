@@ -59,8 +59,7 @@ public abstract class conv_SObjectConverter {
 
         throw new ConversionException('No ConversionContext was found to allow converting between the 2 field types.');
     }
-
-    // TODO: Unit test all remaining default contexts
+    
     public interface ConversionContext {
         Object getTransferableData(SObject sourceRecord, SObjectField sourceField);
         Boolean meetsContextCriteria(Schema.DisplayType sourceFieldType, Schema.DisplayType targetFieldType);

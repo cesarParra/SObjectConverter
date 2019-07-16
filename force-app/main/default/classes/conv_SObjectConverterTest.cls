@@ -1,17 +1,17 @@
 @isTest
 private class conv_SObjectConverterTest {
     @isTest
-    private static void can_convert_sobject_to_another() {
+    private static void canConvertSObjectToAnother() {
         Lead sourceRecord = new Lead(
             NumberOfEmployees = 1000,
             Description = 'Test Description'
         );
 
         // When converting the same types of SObjectFields
-        conv_SObjectConverter converter = new LeadToAccountConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
             Lead.Description => Account.Description, 
             Lead.NumberOfEmployees => Account.NumberOfEmployees
-        });
+        }, Account.SObjectType);
 
         Test.startTest();
         SObject resultRecord = converter.convert(sourceRecord);
@@ -27,14 +27,14 @@ private class conv_SObjectConverterTest {
     }
 
     @isTest
-    private static void can_convert_sobject_to_another_with_different_field_types() {
+    private static void canConvertNonStringToString() {
         Lead sourceRecord = new Lead(
             NumberOfEmployees = 500
         );
 
-        conv_SObjectConverter converter = new LeadToAccountConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
             Lead.NumberOfEmployees => Account.Description
-        });
+        }, Account.SObjectType);
 
         Test.startTest();
         SObject resultRecord = converter.convert(sourceRecord);
@@ -44,15 +44,125 @@ private class conv_SObjectConverterTest {
             'Expected the correct converted integer to string.');   
     }
 
-    private class LeadToAccountConverter extends conv_SObjectConverter {
-        private Map<Schema.SObjectField, Schema.SObjectField> targetFieldBySourceFieldMap;
+    @isTest
+    private static void canConvertNumberZeroToFalseBoolean() {
+        Lead sourceRecord = new Lead(
+            NumberOfEmployees = 0
+        );
 
-        public LeadToAccountConverter(Map<Schema.SObjectField, Schema.SObjectField> targetFieldBySourceFieldMap) {
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+            Lead.NumberOfEmployees => Lead.DoNotCall
+        }, Lead.SObjectType);
+
+        Test.startTest();
+        SObject resultRecord = converter.convert(sourceRecord);
+        Test.stopTest();
+
+        System.assertEquals(false, resultRecord.get(Lead.DoNotCall), 
+            'Expected the correct converted number to boolean.');   
+    }
+
+    @isTest
+    private static void canConvertNonZeroToPositiveBoolean() {
+        Lead sourceRecord = new Lead(
+            NumberOfEmployees = 1
+        );
+
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+            Lead.NumberOfEmployees => Lead.DoNotCall
+        }, Lead.SObjectType);
+
+        Test.startTest();
+        SObject resultRecord = converter.convert(sourceRecord);
+        Test.stopTest();
+
+        System.assertEquals(true, resultRecord.get(Lead.DoNotCall), 
+            'Expected the correct converted number to boolean.');   
+    }
+
+    @isTest
+    private static void canConvertYesStringToTrue() {
+        Lead sourceRecord = new Lead(
+            Jigsaw = 'yes'
+        );
+
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+            Lead.Jigsaw => Lead.DoNotCall
+        }, Lead.SObjectType);
+
+        Test.startTest();
+        SObject resultRecord = converter.convert(sourceRecord);
+        Test.stopTest();
+
+        System.assertEquals(true, resultRecord.get(Lead.DoNotCall), 
+            'Expected the correct converted string to boolean.');   
+    }
+
+    @isTest
+    private static void canConvertTrueStringToTrue() {
+        Lead sourceRecord = new Lead(
+            Jigsaw = 'True'
+        );
+
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+            Lead.Jigsaw => Lead.DoNotCall
+        }, Lead.SObjectType);
+
+        Test.startTest();
+        SObject resultRecord = converter.convert(sourceRecord);
+        Test.stopTest();
+
+        System.assertEquals(true, resultRecord.get(Lead.DoNotCall), 
+            'Expected the correct converted string to boolean.');   
+    }
+    @isTest
+    private static void canConvertNoStringToFalse() {
+        Lead sourceRecord = new Lead(
+            Jigsaw = 'No'
+        );
+
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+            Lead.Jigsaw => Lead.DoNotCall
+        }, Lead.SObjectType);
+
+        Test.startTest();
+        SObject resultRecord = converter.convert(sourceRecord);
+        Test.stopTest();
+
+        System.assertEquals(false, resultRecord.get(Lead.DoNotCall), 
+            'Expected the correct converted string to boolean.');   
+    }
+
+    @isTest
+    private static void canConvertFalseStringToFalse() {
+        Lead sourceRecord = new Lead(
+            Jigsaw = 'false'
+        );
+
+        conv_SObjectConverter converter = new GenericConverter(new Map<Schema.SObjectField, Schema.SObjectField> {
+            Lead.Jigsaw => Lead.DoNotCall
+        }, Lead.SObjectType);
+
+        Test.startTest();
+        SObject resultRecord = converter.convert(sourceRecord);
+        Test.stopTest();
+
+        System.assertEquals(false, resultRecord.get(Lead.DoNotCall), 
+            'Expected the correct converted string to boolean.');   
+    }
+
+    private class GenericConverter extends conv_SObjectConverter {
+        private Map<Schema.SObjectField, Schema.SObjectField> targetFieldBySourceFieldMap;
+        private Schema.SObjectType objectType;
+
+        public GenericConverter(Map<Schema.SObjectField, Schema.SObjectField> targetFieldBySourceFieldMap, 
+            Schema.SObjectType objectType) {
             this.targetFieldBySourceFieldMap = targetFieldBySourceFieldMap;
+            this.objectType = objectType;
         }
 
         protected override SObjectType getTargetSObjectType() {
-            return Account.SObjectType;
+            return this.objectType;
         }
 
         protected override Map<Schema.SObjectField, Schema.SObjectField> getTargetFieldBySourceFieldMap() {
