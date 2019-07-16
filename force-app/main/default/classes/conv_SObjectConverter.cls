@@ -34,7 +34,8 @@ public abstract class conv_SObjectConverter {
             ConversionContext ctx = getConversionContext(sourceField.getDescribe().getType(), 
                 targetField.getDescribe().getType());
 
-            recordToReturn.put(targetField, ctx.getTransferableData(sourceRecord, sourceField));
+            recordToReturn.put(targetField, onPopulateField(sourceRecord, sourceField, 
+                ctx.getTransferableData(sourceRecord, sourceField)));
         }
 
         this.afterConvert(sourceRecord, recordToReturn);
@@ -50,6 +51,10 @@ public abstract class conv_SObjectConverter {
 
     protected virtual void afterConvert(SObject source, SObject resultRecord) { }
 
+    protected virtual Object onPopulateField(SObject sourceRecord, SObjectField sourceField, Object dataToTransfer) { 
+        return dataToTransfer;
+    }
+
     private ConversionContext getConversionContext(Schema.DisplayType sourceType, Schema.DisplayType targetType) {
         for (ConversionContext currentContext : this.ctxs) {
             if (currentContext.meetsContextCriteria(sourceType, targetType)) {
@@ -59,7 +64,7 @@ public abstract class conv_SObjectConverter {
 
         throw new ConversionException('No ConversionContext was found to allow converting between the 2 field types.');
     }
-    
+
     public interface ConversionContext {
         Object getTransferableData(SObject sourceRecord, SObjectField sourceField);
         Boolean meetsContextCriteria(Schema.DisplayType sourceFieldType, Schema.DisplayType targetFieldType);
