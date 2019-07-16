@@ -101,9 +101,9 @@ new conv_SObjectConverter()
 
 ## Example - Translating Records
 
-An example implementation of a converter is provided in the `/sample` module. 
+An example implementation of a converter to translate record field values is provided in the `/sample` module. 
 
-That example shows the capabilities of cloning a record rather than converting by returning the same received SObjectType as the target and using all populated fields for the map. Using the `afterConvert` method the resulting SObject's name is renamed with an `_es` suffix to denote that it is a translated version of a different record.
+That example shows the capabilities of cloning a record rather than converting by returning the same received `SObjectType` as the target and using all populated fields for the map. Using the `afterConvert` method the resulting SObject's name is renamed with an `_es` suffix to denote that it is a translated version of a different record.
 
 ```java
 public with sharing class Translator extends conv_SObjectConverter {
